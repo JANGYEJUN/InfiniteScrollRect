@@ -33,6 +33,7 @@ namespace Yejun.UGUI
         private List<RectTransform> m_autoInactives;
         private Vector2 m_delta;
         private bool m_isDrag;
+        private bool m_isUpdate;
         private int m_indexMin;
         private int m_indexMax;
 
@@ -71,7 +72,7 @@ namespace Yejun.UGUI
         protected override void OnEnable()
         {
             base.OnEnable();
-            UpdateContent();
+            m_isUpdate = true;
         }
 
         protected override void OnDisable()
@@ -94,6 +95,12 @@ namespace Yejun.UGUI
                     });
                 }
                 m_autoInactives.Clear();
+            }
+
+            if (m_isUpdate)
+            {
+                m_isUpdate = false;
+                UpdateContent();
             }
         }
 
