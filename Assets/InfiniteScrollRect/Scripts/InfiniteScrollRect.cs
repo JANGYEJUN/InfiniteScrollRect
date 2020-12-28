@@ -86,7 +86,7 @@ namespace Yejun.UGUI
             {
                 foreach (var target in m_autoInactives)
                 {
-                    target.gameObject.SetActive(onVerifyIndex.Invoke(m_contents[target]));
+                    target.gameObject.SetActive(onVerifyIndex?.Invoke(m_contents[target]) ?? true);
 
                     ExecuteEvents.Execute<IContent>(target.gameObject, null, (handler, data) =>
                     {
@@ -159,7 +159,7 @@ namespace Yejun.UGUI
 
                 bool isUpdated = targets.Any(t =>
                 {
-                    var result = onVerifyIndex.Invoke(t.Value + content.childCount);
+                    var result = onVerifyIndex?.Invoke(t.Value + content.childCount) ?? true;
                     return result;
                 });
 
@@ -211,7 +211,7 @@ namespace Yejun.UGUI
 
                 bool isUpdated = targets.Any(t =>
                 {
-                    var result = onVerifyIndex.Invoke(t.Value - content.childCount);
+                    var result = onVerifyIndex?.Invoke(t.Value - content.childCount) ?? true;
                     return result;
                 });
 
@@ -269,7 +269,7 @@ namespace Yejun.UGUI
 
                 for (int i = m_indexMax + 1; i <= m_indexMax + targets.Count(); i++)
                 {
-                    isUpdated = onVerifyIndex.Invoke(i);
+                    isUpdated = onVerifyIndex?.Invoke(i) ?? true;
                     if (isUpdated)
                     {
                         break;
@@ -285,7 +285,7 @@ namespace Yejun.UGUI
                     {
                         RectTransform target = m_contents2[targetIndex];
 
-                        target.gameObject.SetActive(!m_autoInactive || onVerifyIndex.Invoke(dataIndex));
+                        target.gameObject.SetActive(!m_autoInactive || (onVerifyIndex?.Invoke(dataIndex) ?? true));
 
                         ExecuteEvents.Execute<IContent>(target.gameObject, null, (handler, data) =>
                         {
@@ -320,7 +320,7 @@ namespace Yejun.UGUI
 
                 for (int i = m_indexMin - 1; i >= m_indexMin - targets.Count(); i--)
                 {
-                    isUpdated = onVerifyIndex.Invoke(i);
+                    isUpdated = onVerifyIndex?.Invoke(i) ?? true;
                     if (isUpdated)
                     {
                         break;
@@ -336,7 +336,7 @@ namespace Yejun.UGUI
                     {
                         RectTransform target = m_contents2[targetIndex];
 
-                        target.gameObject.SetActive(!m_autoInactive || onVerifyIndex.Invoke(dataIndex));
+                        target.gameObject.SetActive(!m_autoInactive || (onVerifyIndex?.Invoke(dataIndex) ?? true));
 
                         ExecuteEvents.Execute<IContent>(target.gameObject, null, (handler, data) =>
                         {
