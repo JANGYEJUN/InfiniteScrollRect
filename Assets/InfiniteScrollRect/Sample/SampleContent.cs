@@ -12,7 +12,6 @@ namespace Yejun.UGUI
 
         bool IContent.Update(int index)
         {
-            Debug.Log($"Update: {index}");
             m_text.text = SampleData.Instance.Get(index);
 
             // auto inactive를 off 한 후 사용자가 제어하고 싶을 때 사용

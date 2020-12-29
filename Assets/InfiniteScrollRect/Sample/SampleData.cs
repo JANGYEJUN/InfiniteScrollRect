@@ -27,7 +27,7 @@ namespace Yejun.UGUI
             m_data = new List<string>();
             for (int i = 0; i < 250; i++)
             {
-                m_data.Add($"YJ{i:D3}");
+                m_data.Add($"{i:D3}");
             }
         }
 
