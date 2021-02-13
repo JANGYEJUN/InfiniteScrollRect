@@ -53,9 +53,6 @@ namespace Yejun.UGUI
                 m_contents2[i] = (RectTransform)content.GetChild(i);
             }
 
-            // 가로 모드는 지원 예정
-            horizontal = false;
-
             m_indexMin = 0;
             m_indexMax = content.childCount;
         }
@@ -120,6 +117,7 @@ namespace Yejun.UGUI
         protected override void SetContentAnchoredPosition(Vector2 position)
         {
             // 계산 순서상 반드시 base보다 먼저 해야함
+            position.x -= m_delta.x;
             position.y -= m_delta.y;
             base.SetContentAnchoredPosition(position);
         }
@@ -147,6 +145,7 @@ namespace Yejun.UGUI
             if (m_loopMode)
             {
                 UpdateVerticalLoopMode();
+                UpdateHorizontalLoopMode();
             }
             else if (m_snapshotMode)
             {
@@ -156,6 +155,11 @@ namespace Yejun.UGUI
 
         private void UpdateVerticalLoopMode()
         {
+            if (!vertical)
+            {
+                return;
+            }
+
             if (velocity.y > 0)
             {
                 var targets = m_contents.Where(t =>
@@ -362,6 +366,118 @@ namespace Yejun.UGUI
 
                     localPos.x = content.localPosition.x;
                     localPos.y += content.rect.height;
+
+                    content.localPosition = localPos;
+                }
+            }
+        }
+
+        private void UpdateHorizontalLoopMode()
+        {
+            if (!horizontal)
+            {
+                return;
+            }
+
+            if (velocity.x < 0)
+            {
+                var targets = m_contents.Where(t =>
+                {
+                    bool result = t.Key.offsetMax.x < content.InverseTransformPoint(viewport.position).x + viewport.rect.xMin - m_buffer;
+                    return result;
+                }).OrderBy(t => t.Value);
+
+                bool isUpdated = targets.Any(t =>
+                {
+                    var result = onVerifyIndex?.Invoke(t.Value + content.childCount) ?? true;
+                    return result;
+                });
+
+                if (isUpdated)
+                {
+                    int lastIndex = m_contents.Max(t => t.Value);
+                    foreach (var target in targets)
+                    {
+                        m_contents[target.Key] = ++lastIndex;
+                        target.Key.SetAsLastSibling();
+
+                        if (m_autoInactive)
+                        {
+                            m_autoInactives.Add(target.Key);
+                        }
+                        else
+                        {
+                            target.Key.gameObject.SetActive(true);
+
+                            ExecuteEvents.Execute<IContent>(target.Key.gameObject, null, (handler, data) =>
+                            {
+                                handler.Update(lastIndex);
+                            });
+                        }
+                    }
+
+                    RectTransform child = (RectTransform)content.GetChild(0);
+                    Vector2 childWorldLeftPos = content.TransformPoint(child.offsetMin);
+                    Vector3 localPos = content.parent.InverseTransformPoint(childWorldLeftPos);
+
+                    if (m_isDrag)
+                    {
+                        m_delta += content.offsetMin - (Vector2)localPos;
+                    }
+
+                    localPos.y = content.localPosition.y;
+
+                    content.localPosition = localPos;
+                }
+            }
+            else if (velocity.x > 0)
+            {
+                var targets = m_contents.Where(t =>
+                {
+                    bool result = t.Key.offsetMin.x > content.InverseTransformPoint(viewport.position).x + viewport.rect.xMax + m_buffer;
+                    return result;
+                }).OrderByDescending(t => t.Value);
+
+                bool isUpdated = targets.Any(t =>
+                {
+                    var result = onVerifyIndex?.Invoke(t.Value - content.childCount) ?? true;
+                    return result;
+                });
+
+                if (isUpdated)
+                {
+                    int firstIndex = m_contents.Min(t => t.Value);
+                    foreach (var target in targets)
+                    {
+                        m_contents[target.Key] = --firstIndex;
+                        target.Key.SetAsFirstSibling();
+
+                        if (m_autoInactive)
+                        {
+                            m_autoInactives.Add(target.Key);
+                        }
+                        else
+                        {
+                            target.Key.gameObject.SetActive(true);
+
+                            ExecuteEvents.Execute<IContent>(target.Key.gameObject, null, (handler, data) =>
+                            {
+                                handler.Update(firstIndex);
+                            });
+                        }
+                    }
+
+                    RectTransform child = (RectTransform)content.GetChild(content.childCount - 1);
+                    Vector2 childWorldRightPos = content.TransformPoint(child.offsetMax);
+                    Vector3 localPos = content.parent.InverseTransformPoint(childWorldRightPos);
+
+                    localPos.y = content.localPosition.y;
+                    localPos.x -= content.rect.width;
+
+                    if (m_isDrag)
+                    {
+                        m_delta += content.offsetMin - (Vector2)localPos;
+                    }
 
                     content.localPosition = localPos;
                 }

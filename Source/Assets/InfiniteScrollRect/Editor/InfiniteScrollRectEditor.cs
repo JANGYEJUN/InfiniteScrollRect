@@ -8,15 +8,17 @@ namespace YejunEditor.UGUI
     [CanEditMultipleObjects]
     public class InfiniteScrollRectEditor : ScrollRectEditor
     {
-        SerializedProperty m_buffer;
-        SerializedProperty m_autoInactive;
-        SerializedProperty m_loopMode;
-        SerializedProperty m_snapshotMode;
+        private InfiniteScrollRect m_target;
+        private SerializedProperty m_buffer;
+        private SerializedProperty m_autoInactive;
+        private SerializedProperty m_loopMode;
+        private SerializedProperty m_snapshotMode;
 
         protected override void OnEnable()
         {
             base.OnEnable();
 
+            m_target = target as InfiniteScrollRect;
             m_buffer = serializedObject.FindProperty("m_buffer");
             m_autoInactive = serializedObject.FindProperty("m_autoInactive");
             m_loopMode = serializedObject.FindProperty("m_loopMode");
@@ -29,6 +31,16 @@ namespace YejunEditor.UGUI
 
             EditorGUILayout.PropertyField(m_buffer);
             EditorGUILayout.PropertyField(m_autoInactive);
+
+            if (m_target.vertical)
+            {
+                m_target.horizontal = false;
+            }
+
+            if (m_target.horizontal)
+            {
+                m_target.vertical = false;
+            }
 
             if (m_loopMode.boolValue)
             {
