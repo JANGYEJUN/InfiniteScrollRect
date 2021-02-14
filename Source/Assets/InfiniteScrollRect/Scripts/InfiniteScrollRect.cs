@@ -36,6 +36,7 @@ namespace Yejun.UGUI
         private bool m_isUpdate;
         private int m_indexMin;
         private int m_indexMax;
+        private LayoutGroup m_layoutGroup;
 
         protected override void Awake()
         {
@@ -55,6 +56,8 @@ namespace Yejun.UGUI
 
             m_indexMin = 0;
             m_indexMax = content.childCount;
+
+            m_layoutGroup = content.GetComponent<LayoutGroup>();
         }
 
         protected override void OnDestroy()
@@ -471,15 +474,35 @@ namespace Yejun.UGUI
                     Vector2 childWorldRightPos = content.TransformPoint(child.offsetMax);
                     Vector3 localPos = content.parent.InverseTransformPoint(childWorldRightPos);
 
+                    if (m_isDrag)
+                    {
+                        m_delta += content.offsetMax - (Vector2)localPos;
+                    }
+
                     localPos.y = content.localPosition.y;
                     localPos.x -= content.rect.width;
 
-                    if (m_isDrag)
-                    {
-                        m_delta += content.offsetMin - (Vector2)localPos;
-                    }
-
                     content.localPosition = localPos;
+                }
+            }
+        }
+
+        private void SetAsFirstSibiling(RectTransform transform)
+        {
+            if (m_layoutGroup is GridLayoutGroup)
+            {
+                var grid = m_layoutGroup as GridLayoutGroup;
+
+                if (horizontal)
+                {
+                    if (grid.startAxis == GridLayoutGroup.Axis.Horizontal &&
+                        (grid.startCorner == GridLayoutGroup.Corner.LowerRight || grid.startCorner == GridLayoutGroup.Corner.UpperRight))
+                    {
+                        var last = m_contents.Where(t => t.Key.position.y == transform.position.y).OrderByDescending(t => t.Key.position.x).FirstOrDefault();
+                    }
+                    else
+                    {
+                    }
                 }
             }
         }
