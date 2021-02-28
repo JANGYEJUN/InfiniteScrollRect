@@ -155,7 +155,16 @@ namespace Yejun.UGUI
             for (int i = 0; i < content.childCount; i++)
             {
                 RectTransform target = (RectTransform)content.GetChild(i);
-                target.gameObject.SetActive(true);
+
+                if (m_autoInactive)
+                {
+                    target.gameObject.SetActive(onVerifyIndex?.Invoke(m_contents[target]) ?? true);
+                }
+                else
+                {
+                    target.gameObject.SetActive(true);
+                }
+
                 ExecuteEvents.Execute<IContent>(target.gameObject, null, (handler, data) =>
                 {
                     handler.Update(m_contents[target]);
