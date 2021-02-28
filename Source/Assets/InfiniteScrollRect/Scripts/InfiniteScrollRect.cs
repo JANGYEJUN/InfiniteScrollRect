@@ -38,15 +38,12 @@ namespace Yejun.UGUI
         private int m_indexMax;
         private LayoutGroup m_layoutGroup;
 
-        protected override void Awake()
+        public bool IsUpdate { set { m_isUpdate = value; } }
+
+        public void Init()
         {
-            base.Awake();
-
-            onValueChanged.AddListener(OnValueChanged);
-
-            m_autoInactives = new List<RectTransform>();
-            m_contents = new Dictionary<RectTransform, int>();
-            m_contents2 = new RectTransform[content.childCount];
+            m_contents.Clear();
+            m_contents2.Clone();
 
             for (int i = 0; i < content.childCount; i++)
             {
@@ -57,7 +54,30 @@ namespace Yejun.UGUI
             m_indexMin = 0;
             m_indexMax = content.childCount;
 
+            if (vertical)
+            {
+                SetNormalizedPosition(1, 1);
+            }
+
+            if (horizontal)
+            {
+                SetNormalizedPosition(0, 0);
+            }
+        }
+
+        protected override void Awake()
+        {
+            base.Awake();
+
+            onValueChanged.AddListener(OnValueChanged);
+
+            m_autoInactives = new List<RectTransform>();
+            m_contents = new Dictionary<RectTransform, int>();
+            m_contents2 = new RectTransform[content.childCount];
+
             m_layoutGroup = content.GetComponent<LayoutGroup>();
+
+            Init();
         }
 
         protected override void OnDestroy()
