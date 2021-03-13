@@ -28,8 +28,8 @@ namespace Yejun.UGUI
         /// Key: Content
         /// Value: Index
         /// </summary>
-        private Dictionary<RectTransform, int> m_contents;
-        private RectTransform[] m_contents2;
+        private Dictionary<RectTransform, int> m_contentsForLoopMode;
+        private RectTransform[] m_contentsForSnapshotMode;
         private List<RectTransform> m_autoInactives;
         private Vector2 m_delta;
         private bool m_isDrag;
@@ -45,8 +45,8 @@ namespace Yejun.UGUI
             onValueChanged.AddListener(OnValueChanged);
 
             m_autoInactives = new List<RectTransform>();
-            m_contents = new Dictionary<RectTransform, int>();
-            m_contents2 = new RectTransform[content.childCount];
+            m_contentsForLoopMode = new Dictionary<RectTransform, int>();
+            m_contentsForSnapshotMode = new RectTransform[content.childCount];
 
             m_layoutGroup = content.GetComponent<LayoutGroup>();
 
@@ -55,13 +55,13 @@ namespace Yejun.UGUI
 
         private void Init()
         {
-            m_contents.Clear();
-            m_contents2.Clone();
+            m_contentsForLoopMode.Clear();
+            m_contentsForSnapshotMode.Clone();
 
             for (int i = 0; i < content.childCount; i++)
             {
-                m_contents.Add((RectTransform)content.GetChild(i), i);
-                m_contents2[i] = (RectTransform)content.GetChild(i);
+                m_contentsForLoopMode.Add((RectTransform)content.GetChild(i), i);
+                m_contentsForSnapshotMode[i] = (RectTransform)content.GetChild(i);
             }
 
             m_indexMin = 0;
@@ -83,8 +83,14 @@ namespace Yejun.UGUI
             base.OnDestroy();
             onValueChanged.RemoveAllListeners();
             onVerifyIndex = default;
-            m_contents?.Clear();
-            m_contents = default;
+            m_contentsForLoopMode?.Clear();
+            m_contentsForLoopMode = default;
+
+            for (int i = 0; i < m_contentsForSnapshotMode.Length; i++)
+            {
+                m_contentsForSnapshotMode[i] = default;
+            }
+            m_contentsForSnapshotMode = default;
         }
 
         protected override void OnEnable()
@@ -105,11 +111,11 @@ namespace Yejun.UGUI
             {
                 foreach (var target in m_autoInactives)
                 {
-                    target.gameObject.SetActive(onVerifyIndex?.Invoke(m_contents[target]) ?? true);
+                    target.gameObject.SetActive(onVerifyIndex?.Invoke(m_contentsForLoopMode[target]) ?? true);
 
                     ExecuteEvents.Execute<IContent>(target.gameObject, null, (handler, data) =>
                     {
-                        handler.Update(m_contents[target]);
+                        handler.Update(m_contentsForLoopMode[target]);
                     });
                 }
                 m_autoInactives.Clear();
@@ -145,7 +151,7 @@ namespace Yejun.UGUI
 
         private void UpdateContent()
         {
-            if (m_contents == default)
+            if (m_contentsForLoopMode == default)
             {
                 return;
             }
@@ -156,7 +162,7 @@ namespace Yejun.UGUI
 
                 if (m_autoInactive)
                 {
-                    target.gameObject.SetActive(onVerifyIndex?.Invoke(m_contents[target]) ?? true);
+                    target.gameObject.SetActive(onVerifyIndex?.Invoke(m_contentsForLoopMode[target]) ?? true);
                 }
                 else
                 {
@@ -165,7 +171,7 @@ namespace Yejun.UGUI
 
                 ExecuteEvents.Execute<IContent>(target.gameObject, null, (handler, data) =>
                 {
-                    handler.Update(m_contents[target]);
+                    handler.Update(m_contentsForLoopMode[target]);
                 });
             }
         }
@@ -192,7 +198,7 @@ namespace Yejun.UGUI
 
             if (velocity.y > 0)
             {
-                var targets = m_contents.Where(t =>
+                var targets = m_contentsForLoopMode.Where(t =>
                 {
                     bool result = t.Key.offsetMin.y > content.InverseTransformPoint(viewport.position).y + viewport.rect.yMax + m_buffer;
                     return result;
@@ -206,10 +212,10 @@ namespace Yejun.UGUI
 
                 if (isUpdated)
                 {
-                    int lastIndex = m_contents.Max(t => t.Value);
+                    int lastIndex = m_contentsForLoopMode.Max(t => t.Value);
                     foreach (var target in targets)
                     {
-                        m_contents[target.Key] = ++lastIndex;
+                        m_contentsForLoopMode[target.Key] = ++lastIndex;
                         target.Key.SetAsLastSibling();
 
                         if (m_autoInactive)
@@ -244,7 +250,7 @@ namespace Yejun.UGUI
             }
             else if (velocity.y < 0)
             {
-                var targets = m_contents.Where(t =>
+                var targets = m_contentsForLoopMode.Where(t =>
                 {
                     bool result = t.Key.offsetMax.y < content.InverseTransformPoint(viewport.position).y + viewport.rect.yMin - m_buffer;
                     return result;
@@ -258,10 +264,10 @@ namespace Yejun.UGUI
 
                 if (isUpdated)
                 {
-                    int firstIndex = m_contents.Min(t => t.Value);
+                    int firstIndex = m_contentsForLoopMode.Min(t => t.Value);
                     foreach (var target in targets)
                     {
-                        m_contents[target.Key] = --firstIndex;
+                        m_contentsForLoopMode[target.Key] = --firstIndex;
                         target.Key.SetAsFirstSibling();
 
                         if (m_autoInactive)
@@ -300,7 +306,7 @@ namespace Yejun.UGUI
         {
             if (velocity.y > 0)
             {
-                var targets = m_contents2.Where(t =>
+                var targets = m_contentsForSnapshotMode.Where(t =>
                 {
                     bool result = t.offsetMin.y > content.InverseTransformPoint(viewport.position).y + viewport.rect.yMax + m_buffer;
                     return result;
@@ -322,9 +328,9 @@ namespace Yejun.UGUI
                     m_indexMin += targets.Count();
                     m_indexMax += targets.Count();
 
-                    for (int targetIndex = 0, dataIndex = m_indexMin; targetIndex < m_contents2.Length; targetIndex++, dataIndex++)
+                    for (int targetIndex = 0, dataIndex = m_indexMin; targetIndex < m_contentsForSnapshotMode.Length; targetIndex++, dataIndex++)
                     {
-                        RectTransform target = m_contents2[targetIndex];
+                        RectTransform target = m_contentsForSnapshotMode[targetIndex];
 
                         target.gameObject.SetActive(!m_autoInactive || (onVerifyIndex?.Invoke(dataIndex) ?? true));
 
@@ -351,7 +357,7 @@ namespace Yejun.UGUI
             }
             else if (velocity.y < 0)
             {
-                var targets = m_contents2.Where(t =>
+                var targets = m_contentsForSnapshotMode.Where(t =>
                 {
                     bool result = t.offsetMax.y < content.InverseTransformPoint(viewport.position).y + viewport.rect.yMin - m_buffer;
                     return result;
@@ -373,9 +379,9 @@ namespace Yejun.UGUI
                     m_indexMin -= targets.Count();
                     m_indexMax -= targets.Count();
 
-                    for (int targetIndex = 0, dataIndex = m_indexMin; targetIndex < m_contents2.Length; targetIndex++, dataIndex++)
+                    for (int targetIndex = 0, dataIndex = m_indexMin; targetIndex < m_contentsForSnapshotMode.Length; targetIndex++, dataIndex++)
                     {
-                        RectTransform target = m_contents2[targetIndex];
+                        RectTransform target = m_contentsForSnapshotMode[targetIndex];
 
                         target.gameObject.SetActive(!m_autoInactive || (onVerifyIndex?.Invoke(dataIndex) ?? true));
 
@@ -411,7 +417,7 @@ namespace Yejun.UGUI
 
             if (velocity.x < 0)
             {
-                var targets = m_contents.Where(t =>
+                var targets = m_contentsForLoopMode.Where(t =>
                 {
                     bool result = t.Key.offsetMax.x < content.InverseTransformPoint(viewport.position).x + viewport.rect.xMin - m_buffer;
                     return result;
@@ -425,10 +431,10 @@ namespace Yejun.UGUI
 
                 if (isUpdated)
                 {
-                    int lastIndex = m_contents.Max(t => t.Value);
+                    int lastIndex = m_contentsForLoopMode.Max(t => t.Value);
                     foreach (var target in targets)
                     {
-                        m_contents[target.Key] = ++lastIndex;
+                        m_contentsForLoopMode[target.Key] = ++lastIndex;
                         target.Key.SetAsLastSibling();
 
                         if (m_autoInactive)
@@ -462,7 +468,7 @@ namespace Yejun.UGUI
             }
             else if (velocity.x > 0)
             {
-                var targets = m_contents.Where(t =>
+                var targets = m_contentsForLoopMode.Where(t =>
                 {
                     bool result = t.Key.offsetMin.x > content.InverseTransformPoint(viewport.position).x + viewport.rect.xMax + m_buffer;
                     return result;
@@ -476,10 +482,10 @@ namespace Yejun.UGUI
 
                 if (isUpdated)
                 {
-                    int firstIndex = m_contents.Min(t => t.Value);
+                    int firstIndex = m_contentsForLoopMode.Min(t => t.Value);
                     foreach (var target in targets)
                     {
-                        m_contents[target.Key] = --firstIndex;
+                        m_contentsForLoopMode[target.Key] = --firstIndex;
                         target.Key.SetAsFirstSibling();
 
                         if (m_autoInactive)
@@ -525,7 +531,7 @@ namespace Yejun.UGUI
                     if (grid.startAxis == GridLayoutGroup.Axis.Horizontal &&
                         (grid.startCorner == GridLayoutGroup.Corner.LowerRight || grid.startCorner == GridLayoutGroup.Corner.UpperRight))
                     {
-                        var last = m_contents.Where(t => t.Key.position.y == transform.position.y).OrderByDescending(t => t.Key.position.x).FirstOrDefault();
+                        var last = m_contentsForLoopMode.Where(t => t.Key.position.y == transform.position.y).OrderByDescending(t => t.Key.position.x).FirstOrDefault();
                     }
                     else
                     {
