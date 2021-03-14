@@ -30,7 +30,7 @@ It is repository that infinite scroll rect on Unity UGUI.
 * Unity 2019 or higher
 
 - 지속적으로 업데이트 됩니다.
-- It is constantly updated.
+- It will be constantly updated.
 
 ### Installation
 
